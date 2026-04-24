@@ -24,6 +24,14 @@ const STUDENT = {
   role: 'student',
 };
 
+const STEP_PAUSE_MS = Number(process.env.UI_STEP_PAUSE || 450);
+
+async function pause(page, ms = STEP_PAUSE_MS) {
+  if (ms > 0) {
+    await page.waitForTimeout(ms);
+  }
+}
+
 async function apiRequest(path, { method = 'GET', body, token } = {}) {
   const res = await fetch(`${API_BASE}${path}`, {
     method,
@@ -110,7 +118,7 @@ async function uiLogout(page) {
 
 test('Lab checklist UI automation with real local website', async () => {
   const headless = String(process.env.UI_HEADLESS || 'false').toLowerCase() === 'true';
-  const slowMo = headless ? 0 : Number(process.env.UI_SLOWMO || 700);
+  const slowMo = headless ? 0 : Number(process.env.UI_SLOWMO || 1300);
   const browser = await chromium.launch({ headless, slowMo });
   const page = await browser.newPage();
 
@@ -121,33 +129,119 @@ test('Lab checklist UI automation with real local website', async () => {
   const uniqueTitle = `Lab Internship ${RUN_ID}`;
 
   try {
+    console.log('CHECKSETUP: Prepare deterministic approved internship via API');
     // Setup one approved internship so browse/search/details/apply checks are deterministic.
     await createApprovedInternship(uniqueTitle);
+    await pause(page);
+
+    console.log('CHECK SIGNUP API: email/phone/password validations not present in UI form');
+    const apiRegWeak = await apiRequest('/auth/register', {
+      method: 'POST',
+      body: {
+        username: `api_weak_${RUN_ID}`,
+        password: 'weak',
+        role: 'student',
+        fullName: 'Api Weak',
+        email: `apiweak_${RUN_ID}@mail.com`,
+        phone: '9876543210',
+      },
+    });
+    assert.notEqual(apiRegWeak.status, 201, 'Weak password should not be accepted.');
+
+    const apiRegBadEmail = await apiRequest('/auth/register', {
+      method: 'POST',
+      body: {
+        username: `api_bad_email_${RUN_ID}`,
+        password: 'Hello123',
+        role: 'student',
+        fullName: 'Api Mail',
+        email: 'not-an-email',
+        phone: '9876543210',
+      },
+    });
+    assert.notEqual(apiRegBadEmail.status, 201, 'Invalid email should be rejected.');
+
+    const apiRegBadPhone = await apiRequest('/auth/register', {
+      method: 'POST',
+      body: {
+        username: `api_bad_phone_${RUN_ID}`,
+        password: 'Hello123',
+        role: 'student',
+        fullName: 'Api Phone',
+        email: `apiphone_${RUN_ID}@mail.com`,
+        phone: '12345678',
+      },
+    });
+    assert.notEqual(apiRegBadPhone.status, 201, 'Phone must be exactly 10 digits.');
+
+    const apiRegGood = await apiRequest('/auth/register', {
+      method: 'POST',
+      body: {
+        username: `api_good_${RUN_ID}`,
+        password: 'Hello123',
+        role: 'student',
+        fullName: 'Api Good',
+        email: `apigood_${RUN_ID}@mail.com`,
+        phone: '9876543210',
+      },
+    });
+    assert.equal(apiRegGood.status, 201, 'Valid 10-digit phone should register successfully.');
+
+    const apiRegDuplicate = await apiRequest('/auth/register', {
+      method: 'POST',
+      body: {
+        username: `api_good_${RUN_ID}`,
+        password: 'Hello123',
+        role: 'student',
+        fullName: 'Api Good',
+        email: `apigood_${RUN_ID}@mail.com`,
+        phone: '9876543210',
+      },
+    });
+    assert.notEqual(apiRegDuplicate.status, 201, 'Duplicate username/email should fail.');
 
     // Login checks 1..7
+    console.log('CHECK LOGIN: wrong username should fail with clear error');
     await openAuth(page);
     await page.fill('#username', 'wrong_user_123');
-    await page.fill('#password', 'Wrong@123');
+    await page.fill('#password', STUDENT.password);
     await page.selectOption('#role', 'student');
     await page.click('#loginBtn');
     await page.waitForFunction(() => (document.getElementById('authMessage')?.textContent || '').length > 0);
     let authMsg = await page.textContent('#authMessage');
     assert.match((authMsg || '').toLowerCase(), /invalid|credentials/);
+    await pause(page);
 
+    console.log('CHECK LOGIN: wrong password should fail with clear error');
+    await page.fill('#username', STUDENT.username);
+    await page.fill('#password', 'Wrong@123');
+    await page.click('#loginBtn');
+    await page.waitForFunction(() => (document.getElementById('authMessage')?.textContent || '').length > 0);
+    authMsg = await page.textContent('#authMessage');
+    assert.match((authMsg || '').toLowerCase(), /invalid|credentials/);
+    await pause(page);
+
+    console.log('CHECK LOGIN: empty username/password should not submit');
     await page.fill('#username', '');
     await page.fill('#password', '');
     await page.click('#loginBtn');
     authMsg = await page.textContent('#authMessage');
     assert.match((authMsg || '').toLowerCase(), /please enter both username and password/);
+    await pause(page);
 
+    console.log('CHECK LOGIN: valid credentials should open dashboard');
     await uiLogin(page, STUDENT);
     await uiWaitDashboard(page, 'student');
+    await pause(page);
 
+    console.log('CHECK LOGOUT: logout should end session and go to landing');
     await uiLogout(page);
     await page.goto(`${UI_BASE}/index.html`, { waitUntil: 'domcontentloaded' });
     await page.waitForSelector('#landing:not(.hidden)');
+    await pause(page);
 
     // Case sensitivity (username upper-case should fail)
+    console.log('CHECK LOGIN: username/password case sensitivity');
     await page.click('#getStartedBtn');
     await page.waitForSelector('#auth-section:not(.hidden)');
     await uiLogin(page, {
@@ -157,8 +251,10 @@ test('Lab checklist UI automation with real local website', async () => {
     });
     authMsg = await page.textContent('#authMessage');
     assert.match((authMsg || '').toLowerCase(), /invalid|credentials/);
+    await pause(page);
 
     // Sign-up checks 1..7 (adapted for fields available in this app)
+    console.log('CHECK SIGNUP: valid registration should succeed');
     const newUser = `lab_user_${RUN_ID}`;
     await page.fill('#registerFullName', 'Lab User');
     await page.fill('#username', newUser);
@@ -167,7 +263,9 @@ test('Lab checklist UI automation with real local website', async () => {
     await page.click('#registerBtn');
     await uiWaitDashboard(page, 'student');
     await uiLogout(page);
+    await pause(page);
 
+    console.log('CHECK SIGNUP: name with numbers should fail');
     await page.click('#getStartedBtn');
     await page.waitForSelector('#auth-section:not(.hidden)');
     await page.fill('#registerFullName', 'Lab123');
@@ -177,27 +275,42 @@ test('Lab checklist UI automation with real local website', async () => {
     await page.click('#registerBtn');
     authMsg = await page.textContent('#authMessage');
     assert.match((authMsg || '').toLowerCase(), /full name|letters only/);
+    await pause(page);
 
+    console.log('CHECK SIGNUP: username special chars should fail');
     await page.fill('#registerFullName', 'Lab User');
     await page.fill('#username', 'bad@user');
     await page.fill('#password', 'Hello123');
     await page.click('#registerBtn');
     authMsg = await page.textContent('#authMessage');
     assert.match((authMsg || '').toLowerCase(), /username may use only letters|username/);
+    await pause(page);
+
+    console.log('CHECK SIGNUP: password not meeting min rules should fail');
+    await page.fill('#registerFullName', 'Lab User');
+    await page.fill('#username', `weak_${RUN_ID}`);
+    await page.fill('#password', 'abc');
+    await page.click('#registerBtn');
+    authMsg = await page.textContent('#authMessage');
+    assert.match((authMsg || '').toLowerCase(), /password|at least/);
+    await pause(page);
 
     // Duplicate username check
+    console.log('CHECK SIGNUP: duplicate username should fail');
     await page.fill('#registerFullName', 'Lab User');
     await page.fill('#username', newUser);
     await page.fill('#password', 'Hello123');
     await page.click('#registerBtn');
     authMsg = await page.textContent('#authMessage');
     assert.match((authMsg || '').toLowerCase(), /already|taken|registered/);
+    await pause(page);
 
     // Login again with provided student for remaining checks
     await uiLogin(page, STUDENT);
     await uiWaitDashboard(page, 'student');
 
     // Browse/search internships checks 1..7
+    console.log('CHECK BROWSE: list/search/filter/sort/no-results');
     await page.fill('#internshipSearchInput', uniqueTitle);
     await page.click('#loadInternshipsBtn');
     const listed = page.locator('#internshipList li', { hasText: uniqueTitle }).first();
@@ -217,8 +330,10 @@ test('Lab checklist UI automation with real local website', async () => {
     await page.click('#loadInternshipsBtn');
     const emptyText = await page.textContent('#internshipList li');
     assert.match((emptyText || '').toLowerCase(), /no internships match|clear filters/);
+    await pause(page);
 
     // Internship details checks 1..7
+    console.log('CHECK DETAILS: open full details and verify fields visible');
     await page.fill('#internshipSearchInput', uniqueTitle);
     await page.click('#loadInternshipsBtn');
     await listed.waitFor({ state: 'visible', timeout: 20000 });
@@ -244,19 +359,23 @@ test('Lab checklist UI automation with real local website', async () => {
     assert.equal(applyDisabled, false);
     await page.click('#closeDetailsBtn');
     await page.waitForSelector('#internshipDetailsCard.hidden');
+    await pause(page);
 
     // Application checks 1..7
+    console.log('CHECK APPLY: invalid details should show errors');
     await listed.locator('button', { hasText: 'Apply' }).click();
     await page.waitForSelector('#applyFormCard:not(.hidden)');
 
     await page.fill('#applyFullName', 'Student 123');
     await page.fill('#applyEmail', 'bad_email');
-    await page.fill('#applyPhone', '1234');
+    await page.fill('#applyPhone', '12345678');
     await page.fill('#applyResumeLink', 'bad-link');
     await page.click('#submitApplyBtn');
     const applyErr = await page.textContent('#applyMessage');
     assert.match((applyErr || '').toLowerCase(), /full name|email|phone|resume link/);
+    await pause(page);
 
+    console.log('CHECK APPLY: valid details (10-digit phone) should submit');
     await page.fill('#applyFullName', 'Meena');
     await page.fill('#applyEmail', `meena_${RUN_ID}@mail.com`);
     await page.fill('#applyPhone', '9876543210');
@@ -271,8 +390,10 @@ test('Lab checklist UI automation with real local website', async () => {
     await page.click('#loadApplicationsBtn');
     const appRow = page.locator('#applicationList li', { hasText: uniqueTitle }).first();
     await appRow.waitFor({ state: 'visible', timeout: 20000 });
+    await pause(page);
 
     // Duplicate apply attempt should fail
+    console.log('CHECK APPLY: duplicate apply should fail');
     await listed.locator('button', { hasText: 'Apply' }).click();
     await page.waitForSelector('#applyFormCard:not(.hidden)');
     await page.fill('#applyFullName', 'Meena');
@@ -282,8 +403,10 @@ test('Lab checklist UI automation with real local website', async () => {
     const duplicateMsg = await page.textContent('#applyMessage');
     assert.match((duplicateMsg || '').toLowerCase(), /already applied|duplicate|already/);
     await page.click('#cancelApplyBtn');
+    await pause(page);
 
     // Awareness checks 1..7
+    console.log('CHECK AWARENESS: FAQs/resources/search should work');
     await page.click('#logoutBtn');
     await page.waitForSelector('#landing:not(.hidden)');
     const faqCount = await page.locator('#faqList li').count();
@@ -294,6 +417,7 @@ test('Lab checklist UI automation with real local website', async () => {
     await page.waitForTimeout(600);
     const filteredFaqCount = await page.locator('#faqList li').count();
     assert.ok(filteredFaqCount >= 1);
+    await pause(page);
 
     // Login again for notifications/admin-related checks.
     await page.click('#getStartedBtn');
@@ -302,6 +426,7 @@ test('Lab checklist UI automation with real local website', async () => {
     await uiWaitDashboard(page, 'student');
 
     // Notifications checks 1..7 (in-app feature based)
+    console.log('CHECK NOTIFICATIONS: list and toggles should work');
     await page.click('#loadNotificationsBtn');
     await page.waitForSelector('#notificationList li', { timeout: 20000 });
     const notifText = await page.textContent('#notificationList li');
@@ -318,8 +443,10 @@ test('Lab checklist UI automation with real local website', async () => {
     await page.waitForTimeout(400);
     const afterAlerts = await page.isChecked('#internshipAlertsToggle');
     assert.notEqual(beforeAlerts, afterAlerts);
+    await pause(page);
 
     // Admin checks 1..7
+    console.log('CHECK ADMIN: valid login and screens');
     await uiLogout(page);
     await page.click('#getStartedBtn');
     await page.waitForSelector('#auth-section:not(.hidden)');
@@ -329,16 +456,20 @@ test('Lab checklist UI automation with real local website', async () => {
     await page.waitForSelector('#pendingInternshipList li', { timeout: 20000 });
     await page.click('#adminLoadApplicationsBtn');
     await page.waitForSelector('#adminApplicationList li', { timeout: 20000 });
+    await pause(page);
 
     // Wrong admin credentials should fail
+    console.log('CHECK ADMIN: wrong credentials should fail');
     await uiLogout(page);
     await page.click('#getStartedBtn');
     await page.waitForSelector('#auth-section:not(.hidden)');
     await uiLogin(page, { username: ADMIN.username, password: 'Wrong@123', role: 'admin' });
     authMsg = await page.textContent('#authMessage');
     assert.match((authMsg || '').toLowerCase(), /invalid|credentials/);
+    await pause(page);
 
     // Student cannot access admin panel after student login.
+    console.log('CHECK ADMIN: student cannot access admin panel');
     await uiLogin(page, STUDENT);
     await uiWaitDashboard(page, 'student');
     const adminPanelVisible = await page.$eval('#adminPanel', (el) => !el.classList.contains('hidden'));
