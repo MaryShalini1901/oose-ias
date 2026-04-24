@@ -10,13 +10,23 @@ This folder keeps testing artifacts separate from app code.
 
 ## Run
 
-1. Fully automated local run (recommended):
+1. Fully automated local run (API + load):
    - `npm run test:all`
    - This auto-starts backend when needed, runs API tests, then load tests.
-2. Manual mode (optional):
+2. Browser step-by-step UI automation (opens page and tests in browser):
+   - `npm run test:ui`
+   - Default mode is headed (`UI_HEADLESS=false`), so you can watch each step live.
+3. Full local automation including UI:
+   - `npm run test:all:with-ui`
+4. Manual mode (optional):
    - Start backend: `npm run dev`
    - API tests: `npm run test:api`
    - Load tests: `npm run test:load`
+
+### Optional UI flags
+
+- Headless mode: `set UI_HEADLESS=true && npm run test:ui`
+- Custom frontend URL: `set UI_BASE_URL=http://localhost:5500 && npm run test:ui`
 
 ## CI automation
 
