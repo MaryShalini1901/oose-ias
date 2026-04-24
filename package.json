@@ -18,7 +18,7 @@
     "test:comprehensive": "node testing/run-comprehensive-tests.cjs",
     "test:comprehensive:no-ui": "cross-env RUN_UI_TESTS=false node testing/run-comprehensive-tests.cjs",
     "test:complete": "npm run test:comprehensive && npm run test:all:with-ui",
-    "test:local": "cross-env UI_HEADLESS=false node testing/ui/run-ui-tests.cjs"
+    "test:local": "cross-env LOCAL_LAB_MODE=true UI_HEADLESS=false UI_SLOWMO=700 node testing/ui/run-ui-tests.cjs"
   },
   "keywords": [
     "internship",

@@ -82,6 +82,10 @@ async function main() {
     'testing/ui/real-system-e2e.test.cjs',
   ];
 
+  if (String(process.env.LOCAL_LAB_MODE || 'false').toLowerCase() === 'true') {
+    testFiles.push('testing/ui/lab-checklist-ui.test.cjs');
+  }
+
   const testProc = spawn(process.execPath, ['--test', ...testFiles], {
     stdio: 'inherit',
     shell: false,
