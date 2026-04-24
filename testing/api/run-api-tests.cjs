@@ -1,4 +1,6 @@
 const { spawn } = require('node:child_process');
+const fs = require('node:fs');
+const path = require('node:path');
 
 const BASE_URL = process.env.TEST_BASE_URL || 'http://localhost:5000';
 const HEALTH_PATH = '/';
@@ -36,6 +38,17 @@ function runNode(args, onExit) {
   return child;
 }
 
+function collectApiTestFiles() {
+  const apiDir = path.resolve(process.cwd(), 'testing', 'api');
+  if (!fs.existsSync(apiDir)) return [];
+
+  return fs
+    .readdirSync(apiDir)
+    .filter((name) => name.endsWith('.test.cjs'))
+    .sort()
+    .map((name) => path.join('testing', 'api', name));
+}
+
 async function main() {
   let serverProc = null;
   let startedByScript = false;
@@ -61,7 +74,17 @@ async function main() {
   }
 
   console.log('[test:api] Server is ready. Running API tests...');
-  const testProc = runNode(['--test', 'testing/api/*.test.cjs'], (code) => {
+  const testFiles = collectApiTestFiles();
+  if (testFiles.length === 0) {
+    if (startedByScript && serverProc && !serverProc.killed) {
+      serverProc.kill();
+    }
+    console.error('[test:api] No API test files found in testing/api (*.test.cjs).');
+    process.exit(1);
+    return;
+  }
+
+  const testProc = runNode(['--test', ...testFiles], (code) => {
     if (startedByScript && serverProc && !serverProc.killed) {
       serverProc.kill();
     }
