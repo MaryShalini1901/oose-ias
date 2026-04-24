@@ -77,13 +77,13 @@ async function main() {
     UI_HEADLESS: HEADLESS ? 'true' : 'false',
   };
 
-  const testFiles = [
+  let testFiles = [
     'testing/ui/step-by-step-ui.test.cjs',
     'testing/ui/real-system-e2e.test.cjs',
   ];
 
   if (String(process.env.LOCAL_LAB_MODE || 'false').toLowerCase() === 'true') {
-    testFiles.push('testing/ui/lab-checklist-ui.test.cjs');
+    testFiles = ['testing/ui/lab-checklist-ui.test.cjs'];
   }
 
   const testProc = spawn(process.execPath, ['--test', ...testFiles], {
