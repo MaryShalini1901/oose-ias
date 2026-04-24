@@ -136,7 +136,7 @@ test('Real system automation: company -> admin -> student full flow', async () =
     await page.fill('#applyCoverLetter', 'I am interested in this internship.');
     await page.click('#submitApplyBtn');
 
-    await page.waitForSelector('#applyFormCard.hidden');
+    await page.waitForSelector('#applyFormCard', { state: 'hidden', timeout: 20000 });
     await page.click('#loadApplicationsBtn');
     const appItem = page.locator('#applicationList li', { hasText: internshipTitle }).first();
     await appItem.waitFor({ state: 'visible', timeout: 20000 });
