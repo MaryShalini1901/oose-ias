@@ -4,6 +4,8 @@ const { chromium } = require('playwright');
 
 const UI_BASE = process.env.UI_BASE_URL || 'http://localhost:5500';
 const RUN_ID = Date.now();
+const LOCAL_STUDENT_USERNAME = process.env.LOCAL_STUDENT_USERNAME || '';
+const LOCAL_STUDENT_PASSWORD = process.env.LOCAL_STUDENT_PASSWORD || '';
 
 async function openAuth(page) {
   await page.goto(UI_BASE, { waitUntil: 'domcontentloaded' });
@@ -173,6 +175,68 @@ test('Real system automation: company -> admin -> student full flow', async () =
     await notif.waitFor({ state: 'visible', timeout: 20000 });
 
     assert.ok(true, 'Real end-to-end flow succeeded through UI interactions.');
+  } finally {
+    await page.close();
+    await browser.close();
+  }
+});
+
+test('Local website automation: login with provided student credentials and validate key flows', async (t) => {
+  if (!LOCAL_STUDENT_USERNAME || !LOCAL_STUDENT_PASSWORD) {
+    t.skip('Set LOCAL_STUDENT_USERNAME and LOCAL_STUDENT_PASSWORD to run this credential-based local test.');
+    return;
+  }
+
+  const headless = String(process.env.UI_HEADLESS || 'true').toLowerCase() === 'true';
+  const browser = await chromium.launch({ headless, slowMo: headless ? 0 : 180 });
+  const page = await browser.newPage();
+
+  page.on('dialog', async (dialog) => {
+    await dialog.accept('ok');
+  });
+
+  try {
+    // 1) Open your local site and login using provided credentials.
+    await openAuth(page);
+    await loginAndEnterDashboard(page, {
+      username: LOCAL_STUDENT_USERNAME,
+      password: LOCAL_STUDENT_PASSWORD,
+      role: 'student',
+    });
+
+    // 2) Internship listing should load.
+    await page.click('#loadInternshipsBtn');
+    await page.waitForSelector('#internshipList li', { timeout: 20000 });
+    const internshipCount = await page.locator('#internshipList li').count();
+    assert.ok(internshipCount >= 1, 'Internship list did not render.');
+
+    // 3) Search box should respond.
+    await page.fill('#internshipSearchInput', 'web');
+    await page.click('#loadInternshipsBtn');
+    await page.waitForSelector('#internshipList li', { timeout: 20000 });
+
+    // 4) Open details if a "View Details" button exists.
+    const firstViewBtn = page.locator('#internshipList li button', { hasText: 'View Details' }).first();
+    if ((await firstViewBtn.count()) > 0) {
+      await firstViewBtn.click();
+      await page.waitForSelector('#internshipDetailsCard:not(.hidden)', { timeout: 10000 });
+      const title = await page.textContent('#detailsTitle');
+      assert.ok((title || '').trim().length > 0, 'Details card opened without title.');
+      await page.click('#closeDetailsBtn');
+      await page.waitForSelector('#internshipDetailsCard.hidden', { timeout: 10000 });
+    }
+
+    // 5) Applications list should load.
+    await page.click('#loadApplicationsBtn');
+    await page.waitForSelector('#applicationList li', { timeout: 20000 });
+
+    // 6) Notifications list should load.
+    await page.click('#loadNotificationsBtn');
+    await page.waitForSelector('#notificationList li', { timeout: 20000 });
+
+    // 7) Logout check.
+    await logoutToLanding(page);
+    assert.ok(true, 'Credential-based local website flow completed successfully.');
   } finally {
     await page.close();
     await browser.close();
