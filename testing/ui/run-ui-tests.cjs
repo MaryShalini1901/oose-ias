@@ -77,7 +77,12 @@ async function main() {
     UI_HEADLESS: HEADLESS ? 'true' : 'false',
   };
 
-  const testProc = spawn(process.execPath, ['--test', 'testing/ui/*.test.cjs'], {
+  const testFiles = [
+    'testing/ui/step-by-step-ui.test.cjs',
+    'testing/ui/real-system-e2e.test.cjs',
+  ];
+
+  const testProc = spawn(process.execPath, ['--test', ...testFiles], {
     stdio: 'inherit',
     shell: false,
     env,
