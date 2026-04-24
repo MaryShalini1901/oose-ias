@@ -1,0 +1,28 @@
+```mermaid
+flowchart TD
+    A[Start Test] --> B[Register Student]
+    B --> C{Student Register OK?}
+    C -- No --> Z1[Fail Test]
+    C -- Yes --> D[Register Company]
+    D --> E{Company Register OK?}
+    E -- No --> Z1
+    E -- Yes --> F[Student Login]
+    F --> G{Student Token?}
+    G -- No --> Z1
+    G -- Yes --> H[Company Login]
+    H --> I{Company Token?}
+    I -- No --> Z1
+    I -- Yes --> J[Company Creates Internship]
+    J --> K{Create Status 201?}
+    K -- No --> Z1
+    K -- Yes --> L[Try Admin Approve With Company Token]
+    L --> M{Rejected as Expected?}
+    M -- No --> Z1
+    M -- Yes --> N[List Approved Internships]
+    N --> O{GET /internships 200?}
+    O -- No --> Z1
+    O -- Yes --> P[List Company Internships]
+    P --> Q{GET /internships/mine 200?}
+    Q -- No --> Z1
+    Q -- Yes --> R[Pass Test]
+```

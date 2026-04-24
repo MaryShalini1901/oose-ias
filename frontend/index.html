@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Internship Awareness System</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="topbar-inner">
+        <div class="brand">
+          <div class="brand-mark">
+            <img class="brand-logo" src="assets/logo.png" alt="Internship Awareness System logo" />
+          </div>
+          <div class="brand-text">
+            <div class="brand-title">Internship Awareness System</div>
+            <div class="brand-subtitle">Students • Companies • Admin</div>
+          </div>
+        </div>
+
+        <div class="topbar-actions">
+          <div id="notifWrap" class="notif-wrap hidden">
+            <button type="button" id="notifBellBtn" class="notif-bell" aria-label="Notifications" title="Notifications">
+              <span class="notif-bell-icon" aria-hidden="true">🔔</span>
+              <span id="notifBadge" class="notif-badge hidden">0</span>
+            </button>
+            <div id="notifDropdown" class="notif-dropdown hidden" role="dialog" aria-label="Notification list">
+              <div class="notif-dropdown-header">
+                <span class="notif-dropdown-title">Notifications</span>
+                <button type="button" id="notifMarkAllRead" class="link-btn small">Mark all read</button>
+              </div>
+              <ul id="notifDropdownList" class="notif-list"></ul>
+              <p id="notifEmpty" class="notif-empty muted small">No notifications yet.</p>
+            </div>
+          </div>
+          <button id="navHomeBtn" class="secondary small hidden" type="button">Home</button>
+          <button id="navInternshipsBtn" class="secondary small hidden" type="button">Internships</button>
+          <button id="navApplicationsBtn" class="secondary small hidden" type="button">Applications</button>
+          <button id="navNotificationsBtn" class="secondary small hidden" type="button">Notifications</button>
+          <div id="navUserPill" class="user-pill hidden"></div>
+          <button id="navAuthBtn" class="secondary small">Login</button>
+          <button id="navLogoutBtn" class="secondary small hidden">Logout</button>
+        </div>
+      </div>
+    </header>
+
+    <main class="container">
+      <section id="landing" class="hero">
+        <div class="hero-card">
+          <h1>Internship Awareness System</h1>
+          <p>
+            Explore verified internships, learn through curated resources, and apply with a single form. Companies post
+            opportunities, admins verify authenticity, and students get real updates.
+          </p>
+          <div class="hero-points">
+            <div class="hero-point">
+              <div class="dot"></div>
+              <div><b>Students</b>: search, apply, track applications, and receive notifications</div>
+            </div>
+            <div class="hero-point">
+              <div class="dot"></div>
+              <div><b>Companies</b>: post internships, manage postings, and select candidates</div>
+            </div>
+            <div class="hero-point">
+              <div class="dot"></div>
+              <div><b>Admins</b>: verify postings, approve/reject, and notify students</div>
+            </div>
+          </div>
+          <div class="hero-actions">
+            <button id="getStartedBtn">Start Learning</button>
+            <button id="learnMoreBtn" class="secondary">Explore Internships</button>
+          </div>
+
+          <section id="awarenessSection" class="awareness-block" aria-label="Internship awareness and FAQs">
+            <h2 class="awareness-title">Internship awareness &amp; FAQs</h2>
+            <p id="awarenessUpdated" class="muted small">Last updated: April 2026</p>
+            <label class="awareness-search">
+              Search FAQs
+              <input type="search" id="faqSearchInput" placeholder="Type to filter questions..." autocomplete="off" />
+            </label>
+            <ul id="faqList" class="faq-list"></ul>
+            <p class="muted small">
+              External guide:
+              <a
+                href="https://internshala.com/internships"
+                target="_blank"
+                rel="noopener noreferrer"
+                >Internship listings (example)</a
+              >
+            </p>
+          </section>
+
+          <div class="stats">
+            <div class="stat">
+              <div class="stat-value" data-target="72">72+</div>
+              <div class="stat-label">Active internships</div>
+            </div>
+            <div class="stat">
+              <div class="stat-value" data-target="150">150+</div>
+              <div class="stat-label">Verified companies</div>
+            </div>
+            <div class="stat">
+              <div class="stat-value" data-target="25">25+</div>
+              <div class="stat-label">Domains available</div>
+            </div>
+            <div class="stat">
+              <div class="stat-value" data-target="98">0%</div>
+              <div class="stat-label">Approval accuracy</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <div id="auth-section" class="card hidden">
+        <h2>Login / Register</h2>
+        <label>
+          Full name (for register)
+          <input type="text" id="registerFullName" autocomplete="name" placeholder="Letters only, e.g. Priya S" />
+        </label>
+        <label>
+          Username
+          <input type="text" id="username" autocomplete="username" />
+        </label>
+        <label>
+          Password
+          <input type="password" id="password" minlength="8" autocomplete="current-password" />
+        </label>
+        <p id="passwordHint" class="muted small"></p>
+        <label>
+          Role
+          <select id="role">
+            <option value="student">Student</option>
+            <option value="company">Company</option>
+            <option value="admin">Admin</option>
+          </select>
+        </label>
+        <p class="muted small">
+          <button type="button" id="forgotPasswordBtn" class="link-btn small">Forgot password?</button>
+        </p>
+        <div class="actions">
+          <button id="loginBtn">Login</button>
+          <button id="registerBtn" class="secondary">Register</button>
+        </div>
+        <p id="authMessage" class="message"></p>
+      </div>
+
+      <div id="dashboard" class="card hidden">
+        <div class="dashboard-header">
+          <h2 id="dashboardTitle"></h2>
+          <button id="logoutBtn" class="secondary small">Logout</button>
+        </div>
+        <p id="dashboardInfo"></p>
+
+        <div id="studentPanel" class="panel hidden">
+          <div class="feature-grid role-student">
+            <button class="feature-card" type="button" data-feature="internships">
+              <span class="feature-icon">🔎</span>
+              <span>Search Internships</span>
+            </button>
+            <button class="feature-card" type="button" data-feature="applications">
+              <span class="feature-icon">🧾</span>
+              <span>My Applications</span>
+            </button>
+            <button class="feature-card" type="button" data-feature="notifications">
+              <span class="feature-icon">🔔</span>
+              <span>Notifications</span>
+            </button>
+          </div>
+          <h3>Your Student ID</h3>
+          <div class="id-row">
+            <span id="studentIdValue" class="id-pill"></span>
+            <button id="copyStudentIdBtn" class="secondary small">Copy</button>
+          </div>
+
+          <h3>Search Internships</h3>
+          <label>
+            Search (title / company / description)
+            <input type="text" id="internshipSearchInput" placeholder="Type to search..." />
+          </label>
+          <div class="filter-row">
+            <label>
+              Domain
+              <input type="text" id="filterDomain" placeholder="e.g. Web" />
+            </label>
+            <label>
+              Location
+              <input type="text" id="filterLocation" placeholder="e.g. Remote" />
+            </label>
+            <label>
+              Duration (weeks)
+              <input type="number" id="filterDuration" min="1" placeholder="e.g. 8" />
+            </label>
+            <label>
+              Sort by
+              <select id="sortInternships">
+                <option value="date">Newest first</option>
+                <option value="company">Company A–Z</option>
+                <option value="title">Title A–Z</option>
+              </select>
+            </label>
+          </div>
+          <button id="loadInternshipsBtn">Load Approved Internships</button>
+          <ul id="internshipList"></ul>
+
+          <div id="internshipDetailsCard" class="details-card hidden">
+            <div class="details-header">
+              <h3 id="detailsTitle">Internship Details</h3>
+              <button id="closeDetailsBtn" class="secondary small">Close</button>
+            </div>
+            <div class="details-grid">
+              <div>
+                <img id="detailsImage" class="details-image" alt="Internship image" />
+              </div>
+              <div>
+                <p id="detailsCompany" class="muted"></p>
+                <p id="detailsMeta" class="muted small"></p>
+                <p id="detailsDescription" class="details-desc"></p>
+                <p id="detailsEligibility" class="small"></p>
+                <p id="detailsSkills" class="small"></p>
+                <p id="detailsDuration" class="small"></p>
+                <p id="detailsDeadline" class="small"></p>
+                <p id="detailsStipend" class="small"></p>
+                <p id="detailsVideoLinkWrap" class="muted hidden">
+                  Video:
+                  <a id="detailsVideoLink" href="#" target="_blank" rel="noopener noreferrer">Watch on YouTube</a>
+                </p>
+                <p id="detailsClosedNote" class="message hidden">Applications are closed for this internship.</p>
+                <div class="actions">
+                  <button id="detailsApplyBtn">Apply using Form</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div id="applyFormCard" class="apply-card hidden">
+            <div class="apply-card-header">
+              <h3>Application Form</h3>
+              <button id="cancelApplyBtn" class="secondary small">Cancel</button>
+            </div>
+            <p id="applyForInfo" class="muted"></p>
+            <input type="hidden" id="applyInternshipId" />
+            <label>
+              Full Name
+              <input type="text" id="applyFullName" />
+            </label>
+            <label>
+              Email
+              <input type="email" id="applyEmail" />
+            </label>
+            <label>
+              Phone (10 digits)
+              <input type="text" id="applyPhone" maxlength="30" inputmode="numeric" autocomplete="tel" placeholder="e.g. 9876543210 or 98765 43210" />
+            </label>
+            <label>
+              Education (e.g., 12th, Diploma, B.E)
+              <input type="text" id="applyEducation" placeholder="e.g., B.E / Diploma / 12th" />
+            </label>
+            <label>
+              Qualification (e.g., CGPA/Percent/Year)
+              <input type="text" id="applyQualification" placeholder="e.g., CGPA 8.2 / % / Year" />
+            </label>
+            <label>
+              Skills
+              <input type="text" id="applySkills" placeholder="e.g., HTML, CSS, JavaScript" />
+            </label>
+            <label>
+              Resume Link (optional)
+              <input type="text" id="applyResumeLink" placeholder="Google Drive / GitHub / Portfolio link" />
+            </label>
+            <label>
+              Cover Letter (optional)
+              <textarea id="applyCoverLetter" placeholder="Write a short message..."></textarea>
+            </label>
+            <div class="actions">
+              <button id="submitApplyBtn">Submit Application</button>
+            </div>
+            <p id="applyMessage" class="message"></p>
+          </div>
+
+          <h3>Your Applications</h3>
+          <button id="loadApplicationsBtn">Load My Applications</button>
+          <ul id="applicationList"></ul>
+
+          <h3>Notification settings</h3>
+          <p class="muted small">Turn preferences off to stop seeing alerts in this app (stored on your account).</p>
+          <label class="checkbox-row">
+            <input type="checkbox" id="notifMasterToggle" checked />
+            <span>In-app notifications</span>
+          </label>
+          <label class="checkbox-row">
+            <input type="checkbox" id="internshipAlertsToggle" checked />
+            <span>Alert when a new internship is approved</span>
+          </label>
+
+          <h3>Notifications</h3>
+          <p class="muted small">Use the bell icon (top right) for alerts. You can also load the list here.</p>
+          <button id="loadNotificationsBtn">Load My Notifications</button>
+          <ul id="notificationList"></ul>
+        </div>
+
+        <div id="companyPanel" class="panel hidden">
+          <div class="feature-grid role-company">
+            <button class="feature-card" type="button" data-feature="post-internship">
+              <span class="feature-icon">➕</span>
+              <span>Post Internship</span>
+            </button>
+            <button class="feature-card" type="button" data-feature="manage-listings">
+              <span class="feature-icon">📚</span>
+              <span>Manage Listings</span>
+            </button>
+            <button class="feature-card" type="button" data-feature="applications">
+              <span class="feature-icon">✅</span>
+              <span>View Applications</span>
+            </button>
+          </div>
+          <h3>Post Internship</h3>
+          <label>
+            Title
+            <input type="text" id="internshipTitle" />
+          </label>
+          <label>
+            Company
+            <input type="text" id="internshipCompany" />
+          </label>
+          <label>
+            Description
+            <textarea id="internshipDescription"></textarea>
+          </label>
+          <label>
+            Image URL (optional)
+            <input type="text" id="internshipImageUrl" placeholder="https://..." />
+          </label>
+          <label>
+            YouTube Video URL (optional)
+            <input type="text" id="internshipYoutubeUrl" placeholder="https://www.youtube.com/watch?v=..." />
+          </label>
+          <label>
+            Domain (e.g. Web, Data)
+            <input type="text" id="internshipDomain" placeholder="Web" />
+          </label>
+          <label>
+            Location
+            <input type="text" id="internshipLocation" placeholder="Remote / City" />
+          </label>
+          <label>
+            Duration (weeks)
+            <input type="number" id="internshipDurationWeeks" min="1" placeholder="8" />
+          </label>
+          <label>
+            Application deadline (optional)
+            <input type="date" id="internshipDeadline" />
+          </label>
+          <label>
+            Stipend (optional)
+            <input type="text" id="internshipStipend" placeholder="e.g. ₹10,000 / month" />
+          </label>
+          <label>
+            Eligibility (optional)
+            <textarea id="internshipEligibility" placeholder="Who can apply"></textarea>
+          </label>
+          <label>
+            Skills required (optional)
+            <textarea id="internshipSkillsRequired" placeholder="Comma-separated or short list"></textarea>
+          </label>
+          <button id="postInternshipBtn">Post Internship</button>
+          <p id="companyMessage" class="message"></p>
+
+          <h3>Manage Posted Internships</h3>
+          <button id="loadMyInternshipsBtn">Load Posted Internships</button>
+          <ul id="myInternshipList"></ul>
+
+          <div id="companyDetailsCard" class="details-card hidden">
+            <div class="details-header">
+              <h3 id="companyDetailsTitle">Internship Details</h3>
+              <button id="closeCompanyDetailsBtn" class="secondary small">Close</button>
+            </div>
+            <div class="details-grid">
+              <div>
+                <img id="companyDetailsImage" class="details-image" alt="Internship image" />
+              </div>
+              <div>
+                <p id="companyDetailsCompany" class="muted"></p>
+                <p id="companyDetailsStatus" class="muted"></p>
+                <p id="companyDetailsDescription" class="details-desc"></p>
+                <p id="companyDetailsVideoLinkWrap" class="muted hidden">
+                  Video:
+                  <a id="companyDetailsVideoLink" href="#" target="_blank" rel="noopener noreferrer"
+                    >Watch on YouTube</a
+                  >
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <p class="muted small">New student applications: check the 🔔 bell (top right). Same list as admin.</p>
+          <h3>View Applications</h3>
+          <button id="companyLoadApplicationsBtn">Load Applications</button>
+          <ul id="companyApplicationList"></ul>
+        </div>
+
+        <div id="adminPanel" class="panel hidden">
+          <p class="muted small">Application alerts: use the 🔔 bell (top right) — same notifications as the company for new applications.</p>
+          <div class="feature-grid role-admin">
+            <button class="feature-card" type="button" data-feature="pending-internships">
+              <span class="feature-icon">⏳</span>
+              <span>Pending Internships</span>
+            </button>
+            <button class="feature-card" type="button" data-feature="approve-reject">
+              <span class="feature-icon">✔️</span>
+              <span>Approve / Reject</span>
+            </button>
+            <button class="feature-card" type="button" data-feature="send-notifications">
+              <span class="feature-icon">📣</span>
+              <span>Send Notifications</span>
+            </button>
+          </div>
+          <div class="actions" style="margin-top: 10px;">
+            <button id="resetDemoBtn" class="secondary small" type="button">Reset Demo (apps + notifications only)</button>
+          </div>
+          <h3>Verify Internship Postings (Pending)</h3>
+          <button id="loadPendingInternshipsBtn">Load Pending Postings</button>
+          <ul id="pendingInternshipList"></ul>
+
+          <h3>Student Applications (view &amp; verify)</h3>
+          <p class="muted small">
+            View every application. Approve or Reject updates the student’s status and sends them a notification.
+          </p>
+          <p id="adminTodayStatsHint" class="muted small"></p>
+          <div class="stats admin-day-stats" aria-label="Today’s application counts">
+            <div class="stat">
+              <div class="stat-value" id="adminTodayApplied">—</div>
+              <div class="stat-label">Applied today</div>
+            </div>
+            <div class="stat">
+              <div class="stat-value" id="adminTodayApproved">—</div>
+              <div class="stat-label">Approved today</div>
+            </div>
+            <div class="stat">
+              <div class="stat-value" id="adminTodayRejected">—</div>
+              <div class="stat-label">Rejected today</div>
+            </div>
+          </div>
+          <button id="adminLoadApplicationsBtn">Load All Applications</button>
+          <ul id="adminApplicationList"></ul>
+
+          <h3>Notify Student</h3>
+          <label>
+            Student User ID
+            <input type="text" id="notifyStudentId" />
+          </label>
+          <label>
+            Message
+            <textarea id="notifyMessage"></textarea>
+          </label>
+          <button id="sendNotifyBtn">Send Notification</button>
+          <p id="adminMessage" class="message"></p>
+        </div>
+      </div>
+    </main>
+
+    <script src="script.js"></script>
+  </body>
+  </html>
+
