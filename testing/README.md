@@ -16,9 +16,12 @@ This folder keeps testing artifacts separate from app code.
 2. Browser step-by-step UI automation (opens page and tests in browser):
    - `npm run test:ui`
    - Default mode is headed (`UI_HEADLESS=false`), so you can watch each step live.
-3. Full local automation including UI:
+3. Local one-by-one browser automation for your own website:
+   - `npm run test:local`
+   - Opens your internship awareness system page locally, fills login/register/application fields, and runs the real flow in the browser.
+4. Full local automation including UI:
    - `npm run test:all:with-ui`
-4. Manual mode (optional):
+5. Manual mode (optional):
    - Start backend: `npm run dev`
    - API tests: `npm run test:api`
    - Load tests: `npm run test:load`

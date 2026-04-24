@@ -16,8 +16,9 @@
     "test:comprehensive:api": "node --test testing/api/comprehensive-test-suite.cjs",
     "test:comprehensive:ui": "node --test testing/ui/comprehensive-ui-flows.test.cjs",
     "test:comprehensive": "node testing/run-comprehensive-tests.cjs",
-    "test:comprehensive:no-ui": "RUN_UI_TESTS=false node testing/run-comprehensive-tests.cjs",
-    "test:complete": "npm run test:comprehensive && npm run test:all:with-ui"
+    "test:comprehensive:no-ui": "cross-env RUN_UI_TESTS=false node testing/run-comprehensive-tests.cjs",
+    "test:complete": "npm run test:comprehensive && npm run test:all:with-ui",
+    "test:local": "cross-env UI_HEADLESS=false node testing/ui/run-ui-tests.cjs"
   },
   "keywords": [
     "internship",
@@ -38,6 +39,7 @@
     "mongoose": "^8.4.1"
   },
   "devDependencies": {
+    "cross-env": "^10.1.0",
     "nodemon": "^3.1.0",
     "playwright": "^1.53.0"
   }
